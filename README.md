@@ -83,7 +83,7 @@ Example: "Chair on the left, approximately 2.1 meters away."
 
 Press 'q' to exit the program.
 
-#Project Features Explained
+## Project Features Explained
 | Feature                      | Details                                                                |
 | ---------------------------- | ---------------------------------------------------------------------- |
 | **Object Detection**         | Detects objects in real-time using YOLOv5.                             |
