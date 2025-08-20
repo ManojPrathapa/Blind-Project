@@ -55,6 +55,8 @@ Required libraries:
 Install dependencies using:
 
 ```bash
+python -m venv venv
+venv\Scripts\activate   # (Windows)
 pip install -r requirements.txt
 ```
 4. Configure IP Webcam (Optional)
