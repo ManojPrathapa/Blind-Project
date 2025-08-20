@@ -65,28 +65,25 @@ Start the camera server.
 
 Copy the video URL (e.g., http://192.168.1.5:8080/video) to use in the program.
 
-Running the Program
+## Running the Program
 
-To run the application, execute:
-
+# To run the application, execute:
+```bash
 python main.py
-
+```
 
 This will trigger the camera selection menu:
 
-It will list all connected local webcams.
-
-You can also enter an IP webcam URL.
+It will list all connected local webcams.You can also enter an IP webcam URL.
 
 A detection window will open showing the live video feed with bounding boxes. The system will begin making voice announcements:
 
-Example: "Person ahead, approximately 3.5 meters away."
+# Example: "Person ahead, approximately 3.5 meters away."
+# Example: "Chair on the left, approximately 2.1 meters away."
 
-Example: "Chair on the left, approximately 2.1 meters away."
+# Press 'q' to exit the program.
 
-Press 'q' to exit the program.
-
-Project Features Explained
+## Project Features Explained
 | Feature                      | Details                                                                |
 | ---------------------------- | ---------------------------------------------------------------------- |
 | **Object Detection**         | Detects objects in real-time using YOLOv5.                             |
