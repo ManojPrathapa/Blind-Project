@@ -148,11 +148,12 @@ class NavigationManager:
     def _run_detection(self, camera_index: int = 0):
         try:
             model = torch.hub.load("ultralytics/yolov5", "yolov5s")
-            cap = cv2.VideoCapture(camera_index)
+            cap = cv2.VideoCapture(camera_index,cv2.CAP_DSHOW)
             self.voice_say("Object detection started.")
 
             while self._running:
                 ret, frame = cap.read()
+
                 if not ret:
                     time.sleep(0.5)
                     continue
