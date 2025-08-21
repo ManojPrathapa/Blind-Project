@@ -58,6 +58,10 @@ Install dependencies using:
 python -m venv venv
 venv\Scripts\activate   # (Windows)
 pip install -r requirements.txt
+
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+pip install opencv-python opencv-contrib-python
+pip install opencv-python
 ```
 4. Configure IP Webcam (Optional)
 
