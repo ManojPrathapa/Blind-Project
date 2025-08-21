@@ -2,14 +2,11 @@ import cv2
 from ultralytics import YOLO
 
 class Detector:
-    def __init__(self, model_path="models/yolov5s.pt", conf=0.35, device="cpu"):
+    def __init__(self, model_path: str, conf: float = 0.35, device: str = "cpu"):
         self.model = YOLO(model_path)
         self.conf = conf
         self.device = device
-        try:
-            self.model.predict_kwargs = {"conf": self.conf}
-        except Exception:
-            pass
+        # names could be list or dict in different UL versions
         self.names = self.model.names
 
     def stream(self, source=0, show=True, imgsz=640):
@@ -18,9 +15,9 @@ class Detector:
             raise RuntimeError(f"Cannot open video source {source}")
 
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                continue  # keep trying for IP webcam
+            ok, frame = cap.read()
+            if not ok:
+                break
 
             results = self.model.predict(source=[frame], imgsz=imgsz, conf=self.conf, device=self.device, verbose=False)
 

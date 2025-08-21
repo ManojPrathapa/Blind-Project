@@ -1,62 +1,125 @@
-import pytesseract
-import pyttsx3
 import cv2
-from typing import Optional, List
 import easyocr
+import pyttsx3
+import threading
+import time
 
-class OCR:
-    def __init__(self, languages: str = 'eng', use_easyocr: bool = True):
-        """
-        languages: Tesseract language codes, e.g., 'eng+fra+hin'
-        use_easyocr: if True, use EasyOCR as fallback for better recognition
-        """
-        self.languages = languages
+from src.navigation import NavigationManager  # use unified navigation
+
+# =====================
+# Voice Engine
+# =====================
+class Voice:
+    def __init__(self):
         self.engine = pyttsx3.init()
-        self.engine.setProperty('rate', 180)  # speech rate
-        self.engine.setProperty('volume', 1.0)
-        self.use_easyocr = use_easyocr
-        if use_easyocr:
-            self.reader = easyocr.Reader([lang.split('+')[0] for lang in languages.split('+')])
+        self.engine.setProperty("rate", 150)
 
     def speak(self, text: str):
-        if not text.strip():
-            return
+        print(f"[VOICE]: {text}")
         self.engine.say(text)
         self.engine.runAndWait()
 
-    def detect_text(self, frame) -> List[str]:
-        """
-        Detect text in a given image frame.
-        Returns a list of detected text strings.
-        """
-        text_results = []
 
-        # Tesseract detection
-        config = '--psm 6'  # assume a single uniform block of text
-        try:
-            text = pytesseract.image_to_string(frame, lang=self.languages, config=config)
-            if text.strip():
-                text_results.append(text.strip())
-        except Exception as e:
-            print("Tesseract OCR error:", e)
+# =====================
+# OCR Reader
+# =====================
+class OCRReader:
+    def __init__(self):
+        self.reader = easyocr.Reader(["en"], gpu=False)
 
-        # EasyOCR fallback
-        if self.use_easyocr:
-            try:
-                easy_results = self.reader.readtext(frame, detail=0)
-                for t in easy_results:
-                    if t.strip() not in text_results:
-                        text_results.append(t.strip())
-            except Exception as e:
-                print("EasyOCR error:", e)
+    def run_loop(self, source=0, on_text=None):
+        cap = cv2.VideoCapture(source)
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        return text_results
+            results = self.reader.readtext(frame)
+            for (bbox, text, prob) in results:
+                if prob > 0.5:
+                    if on_text:
+                        on_text(text)
 
-    def speak_text_from_frame(self, frame):
-        """
-        Detects text and speaks it immediately.
-        """
-        texts = self.detect_text(frame)
-        for t in texts:
-            print("OCR DETECTED:", t)
-            self.speak(t)
+                    pts = cv2.boxPoints(cv2.minAreaRect(bbox))
+                    pts = cv2.convexHull(pts.astype(int))
+                    cv2.polylines(frame, [pts], True, (0, 255, 0), 2)
+                    cv2.putText(frame, text, tuple(pts[0]), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+            cv2.imshow("OCR", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+# =====================
+# Object Detection Stub
+# (replace with real YOLO/SSD later)
+# =====================
+class ObjectDetector:
+    def __init__(self, voice: Voice):
+        self.voice = voice
+        self.object_classes = ["person", "car", "dog", "chair"]
+
+    def detect_objects(self, frame):
+        # Mock detection
+        h, w, _ = frame.shape
+        bbox = [w // 4, h // 4, w // 2, h // 2]
+        detected_object = "person"
+        distance = self.estimate_distance(bbox, w, h)
+
+        # Speak result
+        self.voice.speak(f"{detected_object} detected {distance} meters away")
+
+        # Draw rectangle
+        cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 0, 255), 2)
+        cv2.putText(frame, f"{detected_object} {distance}m", (bbox[0], bbox[1] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
+        return [(detected_object, bbox, distance)]
+
+    def estimate_distance(self, bbox, frame_w, frame_h):
+        box_w = bbox[2] - bbox[0]
+        scale = frame_w / box_w
+        distance_m = round(scale * 0.5, 1)
+        return distance_m
+
+
+# =====================
+# Main Runner for Nav + Objects
+# =====================
+def run_navigation_with_objects():
+    voice = Voice()
+    detector = ObjectDetector(voice)
+    navigator = NavigationManager(voice.speak, travel_mode="walking")
+
+    start = input("Enter starting location: ")
+    destination = input("Enter destination: ")
+
+    # Start navigation (runs in background, API or fallback browser)
+    navigator.start_navigation(start, destination, use_api_guidance=True)
+
+    # Start camera loop
+    cap = cv2.VideoCapture(0)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        detector.detect_objects(frame)
+        cv2.imshow("Navigation + Object Detection", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    navigator.stop()
+
+
+# =====================
+# Entry Point
+# =====================
+if __name__ == "__main__":
+    run_navigation_with_objects()
