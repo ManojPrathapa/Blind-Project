@@ -1,6 +1,3 @@
-import pyttsx3
-import speech_recognition as sr
-
 class Voice:
     def __init__(self):
         self.engine = pyttsx3.init()

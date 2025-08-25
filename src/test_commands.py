@@ -92,14 +92,43 @@ class FaceRecognition:
 # -------------------
 # OCR Function
 # -------------------
+# -------------------
+# OCR Function (Simplified)
+# -------------------
+import cv2
+import easyocr
+
+reader = easyocr.Reader(['en'])
+
 def perform_ocr(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    data = pytesseract.image_to_data(gray, output_type=pytesseract.Output.DICT)
-    text = " ".join([word for word in data['text'] if word.strip() != ""])
-    if text:
-        speak(f"OCR detected: {text}")
-    else:
-        speak("No text detected.")
+    try:
+        # Convert to grayscale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Increase contrast using thresholding
+        _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+
+        # Run EasyOCR on processed image
+        results = reader.readtext(thresh)
+
+        if results:
+            text_output = []
+            print("[OCR Result]:")
+            for (bbox, text, prob) in results:
+                print(f"  - {text} (conf: {prob:.2f})")
+                text_output.append(text)
+            
+            # Speak the detected text
+            if text_output:
+                from test_commands import speak  # if speak is in test_commands.py
+                speak(" ".join(text_output))
+        else:
+            print("[OCR Result]: No text detected.")
+
+    except Exception as e:
+        print("[OCR Error]:", e)
+
+
 
 # -------------------
 # Navigation Manager
@@ -180,10 +209,16 @@ def main():
                 speak(f"Starting object detection now.")
                 # Continue YOLO detection after navigation
                 frame = yolo_detector.detect_objects(frame)
+            elif "read" in command:  # covers "read" and "read image"
+                ret, frame = cap.read()
+                if ret:
+                    perform_ocr(frame)
+                else:
+                    speak("I could not capture the image for reading.")
 
-            elif "read text" in command or "ocr" in command:
-                perform_ocr(frame)
 
+            
+            
         # Show camera for debugging
         cv2.imshow("Camera", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
